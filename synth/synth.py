@@ -7,6 +7,14 @@ def gcd(a: int, b: int) -> int:
        a, b = b, a % b
     return a 
 
+def lazy_mean(X: list, dtype: type):
+    n = len(X)
+    y = np.zeros(max(map(len, X)), dtype=dtype)
+    for x in X:
+        y[:len(x)] += (x / n).astype(dtype)
+    else:
+        return y
+
 TWO_PI = 2.0 * np.pi
 
 class Synth:
@@ -17,7 +25,7 @@ class Synth:
 
     channels = 1
 
-    pluck = None
+    shape = None
 
     gain = 1.0
 
@@ -37,9 +45,12 @@ class Synth:
             s = sum(h for k,h in self.harmonics)
             self.harmonics = [(k, h/s) for k, h in self.harmonics]
 
-        if 'pluck' in kwargs:
-            self.pluck = kwargs['pluck']
-            assert callable(self.pluck)
+        if 'shape' in kwargs:
+            self.shape = kwargs['shape']
+            assert callable(self.shape)
+
+        if 'channels' in kwargs:
+            self.channels = max(1, int(kwargs['channels']))
 
         if 'bits' in kwargs:
             self.bits = int(kwargs['bits'])
@@ -76,18 +87,32 @@ class Synth:
                 w[i:j] += h * np.sin(TWO_PI * frequency * k * x)
             
             ## envelope wave
-            self._pluck(w, i, j)
+            self._shape(w, i, j)
         else:
             return (w * self.amp * self.gain).astype(self.type)
 
     def synth(self, notes: list) -> bytearray:
         return self._encode(self._synth(notes))
 
-    def _pluck(self, w: np.ndarray, i: int, j: int):
-        if self.pluck is None:
+    def _shape(self, w: np.ndarray, i: int, j: int):
+        if self.shape is None:
             return None
         else:
-            w[i:j] *= self.pluck(i, j) # pylint: disable=not-callable
+            w[i:j] *= self.shape(i, j) # pylint: disable=not-callable
+
+    def _decode(self, w: bytearray) -> np.ndarray:
+        a = self.bits
+        b = 8 * self.type(0).nbytes
+
+        if a == b:
+            buffer = w
+        else:
+            c = gcd(a, b)
+            a //= c
+            b //= c
+            buffer = [(x + b'\x00') if ((i - b) % a) else x for i, x in enumerate(w)]
+        
+        return np.frombuffer(buffer, dtype=self.type)
 
     def _encode(self, w: np.ndarray) -> bytearray:
         a = self.bits
@@ -99,15 +124,22 @@ class Synth:
             c = gcd(a, b)
             a //= c
             b //= c
-            return bytearray([b for i, b in enumerate(w.tobytes()) if ((i - a) % b)])
+            return bytearray([x for i, x in enumerate(w.tobytes()) if ((i - a) % b)])
 
     def wave(self, fname: str, audio: bytearray) -> None:
+        """ Writes sound to .wav file
+        """
+        if self.channels == 1:
+            nframes = len(audio)
+        else:
+            nframes = len(audio[0])
+
         with wave.open(fname, 'wb') as wave_write:
             ## pylint: disable=no-member
             wave_write.setframerate(self.sample_rate)
             wave_write.setnchannels(self.channels)
             wave_write.setsampwidth(self.bits // 8)
-            wave_write.setnframes(len(audio))
+            wave_write.setnframes(nframes)
             wave_write.writeframes(audio)
 
     def play(self, w: np.ndarray, sync: bool=True):
@@ -120,28 +152,23 @@ class Synth:
         else:
             return play
 
-    ## Plucks:
+    def merge(self, *channels: list) -> list:
+        """ cls.merge([audio_1: bytearray, ...], [audio_k: bytearray, ...], ...)
+        """
+        audio = [self._encode(lazy_mean([self._decode(w) for w in channel], self.type)) for channel in channels]
+        
+        if len(audio) == 1:
+            return audio[0]
+        else:
+            return audio
+
+    ## shapes:
     ## Wave envelopers that vary according to playing style
     @staticmethod
-    def bow(a: float = 10.0):
-        r""" Bowed Strings
-        """
-        def bow_pluck(i, j):
-            x = np.linspace(-1.0, 1.0, j - i, endpoint=True, dtype=float)
-            y = 1.0 / (1.0 + np.exp(-a * (x - 0.5)))
-            z = 1.0 / (1.0 + np.exp(-a * (x + 0.5)))
-            return (y - z)
-        return bow_pluck
-
-    @staticmethod
-    def key(a: float=0.40):
-        r""" a \in (0, 1)
-            Piano key
-        """
+    def bow(a: float=0.40):
         b = a * np.sqrt(np.pi / 8.0)
-        def key_pluck(i, j):
+        def bow_shape(i, j):
             x = np.linspace(0.0, 1.0, j - i, endpoint=True, dtype=float)
             y = 0.5 * np.power(x / b, 2.0)
             return y * np.exp(1.0 - y)
-        return key_pluck
-            
+        return bow_shape

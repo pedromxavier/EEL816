@@ -28,7 +28,7 @@ class Compiler:
     def _compile(self, source):
         self.reset()
 
-        self.queue.extend(reversed(self.parser.parse(source)))
+        self.queue.extendleft(self.parser.parse(source))
 
         if self.init_key in self.instructions:
             self.instructions[self.init_key](self)

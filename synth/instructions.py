@@ -75,7 +75,7 @@ def cmd_time(compiler: Compiler, a: int, b: int):
 def cmd_rept(compiler: Compiler, code: tuple):
     """
     """
-    compiler.queue.extend(code + code)
+    compiler.queue.extendleft(code + code)
     return None
 
 def cmd_tempo(compiler: Compiler, tempo: int):
