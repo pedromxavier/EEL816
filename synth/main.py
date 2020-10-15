@@ -29,7 +29,7 @@ def main(argc: int, argv: list):
         'harmonics' : [1.00, 0.36, 0.30, 0.26, 0.28, 0.08, 0.28, 0.31],
 
         ## Bowed Strings pluck
-        'pluck' : Synth.bow()
+        'shape' : Synth.bow()
     }
 
     compiler = Compiler(parser, instructions)
