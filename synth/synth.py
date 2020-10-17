@@ -2,6 +2,8 @@ import numpy as np
 import wave
 import simpleaudio as sa
 
+from .instruments import Instrument
+
 def gcd(a: int, b: int) -> int:
     while b: 
        a, b = b, a % b
@@ -40,10 +42,8 @@ class Synth:
         if 'gain' in kwargs:
             self.gain = max(min(float(kwargs['gain']), 1.0), 0.0)
 
-        if 'harmonics' in kwargs:
-            self.harmonics = [(k, pow(h, 10.0)) for k,h in enumerate(kwargs['harmonics'], start=1)]
-            s = sum(h for k,h in self.harmonics)
-            self.harmonics = [(k, h/s) for k, h in self.harmonics]
+        if 'instrument' in kwargs:
+            self.instrument = Instrument.get(kwargs['instrument'])
 
         if 'shape' in kwargs:
             self.shape = kwargs['shape']
@@ -79,16 +79,10 @@ class Synth:
         i, j = 0, 0
         for frequency, duration in notes:
             i, j = j, (j + int(duration * self.sample_rate))
-
             if frequency is None: continue
-
-            x = t[i:j]
-            for k, h in self.harmonics:
-                w[i:j] += h * np.sin(TWO_PI * frequency * k * x)
-            
-            ## envelope wave
-            self._shape(w, i, j)
+            self.instrument.touch(frequency, t, w, i, j, n)
         else:
+            w /= np.max(np.abs(w))
             return (w * self.amp * self.gain).astype(self.type)
 
     def synth(self, notes: list) -> bytearray:
@@ -161,14 +155,3 @@ class Synth:
             return audio[0]
         else:
             return audio
-
-    ## shapes:
-    ## Wave envelopers that vary according to playing style
-    @staticmethod
-    def bow(a: float=0.40):
-        b = a * np.sqrt(np.pi / 8.0)
-        def bow_shape(i, j):
-            x = np.linspace(0.0, 1.0, j - i, endpoint=True, dtype=float)
-            y = 0.5 * np.power(x / b, 2.0)
-            return y * np.exp(1.0 - y)
-        return bow_shape

@@ -26,10 +26,7 @@ def main(argc: int, argv: list):
         'sample_rate' : args.rate,
 
         ## Violin D String response (db)
-        'harmonics' : [1.00, 0.36, 0.30, 0.26, 0.28, 0.08, 0.28, 0.31],
-
-        ## Bowed Strings pluck
-        'shape' : Synth.bow()
+        'instrument' : 'violin',
     }
 
     compiler = Compiler(parser, instructions)
