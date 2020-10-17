@@ -1,3 +1,4 @@
+import re
 from ply import lex, yacc
 
 tokens = (
@@ -60,7 +61,7 @@ def t_NUMBER(t):
 def t_error(t):
     raise SyntaxError(f'Invalid Token: {t}')
 
-lexer = lex.lex()
+lexer = lex.lex(reflags=re.UNICODE)
 
 def p_start(p):
     ''' start : code

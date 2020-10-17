@@ -11,6 +11,7 @@ def main(argc: int, argv: list):
     argparser = argparse.ArgumentParser(description="Sound Compiler & Synth")
 
     argparser.add_argument('-o', '--output', type=str, default="music.wav", help="Sets output destination.")
+    argparser.add_argument('-i', '--instrument', type=str, default="synth", help="Selects instrument.")
     argparser.add_argument('-r', '--rate', type=int, default=44_100, help="Sets sample rate.")
     argparser.add_argument('-b', '--bits', type=int, default=16, choices=[8, 16, 24, 32], help="Sets encoding bits.")
     argparser.add_argument('source', nargs="+", help="Provides Input files")
@@ -25,8 +26,8 @@ def main(argc: int, argv: list):
         ## sample rate
         'sample_rate' : args.rate,
 
-        ## Violin D String response (db)
-        'instrument' : 'violin',
+        ## Instrument
+        'instrument' : args.instrument,
     }
 
     compiler = Compiler(parser, instructions)

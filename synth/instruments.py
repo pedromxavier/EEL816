@@ -26,13 +26,16 @@ class Instrument(metaclass=MetaInstrument):
         self.kwargs = kwargs
 
     def touch(self, f: float, t:np.ndarray, w: np.ndarray, i: int, j: int, n: int):
-        x = t[i:j]
         for k, h in self.harmonics(f):
-            w[i:j] += h * np.sin(TWO_PI * f * k * x)
+            w[i:j] += h * self.wave(t[i:j], f, k)
         else:
             w[i:j] += self.noise(j - i)
 
         self.shape(w, i, j, n)
+
+    @classmethod
+    def wave(self, t: np.ndarray, f: float, k: int):
+        return np.sin(TWO_PI * f * k * t)
 
     @classmethod
     def shape(self, w: np.ndarray, i: int, j: int, n: int):
@@ -87,6 +90,37 @@ class Violin(Instrument, metaclass=MetaInstrument):
             return cls.A_STRING
         else:
             return cls.E_STRING
+
+class Synth(Instrument, metaclass=MetaInstrument):
+
+    __key__ = 'synth'
+
+    VOICE = Instrument.get_harmonics([1.00, 0.5, 0.0, 0.25, 0.0, 0.0, 0.0, 0.125])
+
+    @classmethod
+    def wave(cls, t: np.ndarray, f: float, k: int):
+        return t % (1.0 / ((f + cls.tremolo(t)) * k))
+
+    @classmethod
+    def tremolo(cls, t: np.ndarray):
+        return 0.001 * np.sin(TWO_PI * 5.0 * t)
+
+    @classmethod
+    def noise(cls, n: int):
+        return 0.0
+
+    @classmethod
+    def shape(cls, w, i, j, n):
+        w[i:j] *= cls.synth_shape(i, j)
+
+    @classmethod
+    def synth_shape(cls, i, j):
+        t = np.linspace(-1.0, 1.0, num = (j - i), endpoint = True)
+        return np.exp(-np.power(1.2 * t, 12.0)) 
+
+    @classmethod
+    def harmonics(cls, f: float):
+        return cls.VOICE
 
 
 

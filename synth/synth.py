@@ -21,7 +21,7 @@ TWO_PI = 2.0 * np.pi
 
 class Synth:
 
-    harmonics = [(1, 1.0)]
+    instrument = 'synth'
 
     sample_rate = 44_100
 
