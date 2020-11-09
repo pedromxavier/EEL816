@@ -23,12 +23,18 @@ C = (4, 4)
 data = '0 0 1233 11 11 11'
 
 tempo = TimeMarkos(C)
+chord = ChordMarkos()
+
 tempo.seed(0)
+chord.seed(0)
+
 tempo.train([x for x in data if x != ' '])
 k = 0
+current_chord = None
 for t in tempo:
     if k >= 12: break
     if t is None:
+        current_cord = chord.next()
         k += 1
         print(' ', end='')
     else:

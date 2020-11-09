@@ -66,7 +66,9 @@ class TimeMarkos(Markos):
 
 
 class ChordMarkos(Markos):
-    ...
+    def __init__(self):
+        self.n = 7
+
 
 class NoteMarkos(Markos):
-    ...
+        
