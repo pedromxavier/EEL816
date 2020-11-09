@@ -17,7 +17,8 @@ def lazy_mean(X: list, dtype: type):
     else:
         return y
 
-TWO_PI = 2.0 * np.pi
+PI = np.pi
+TWO_PI = 2.0 * PI
 
 class Synth:
 
@@ -80,7 +81,7 @@ class Synth:
         for frequency, duration in notes:
             i, j = j, (j + int(duration * self.sample_rate))
             if frequency is None: continue
-            self.instrument.touch(frequency, t, w, i, j, n)
+            self.instrument.touch(frequency, duration, t, w, i, j, n)
         else:
             w /= np.max(np.abs(w))
             return (w * self.amp * self.gain).astype(self.type)
