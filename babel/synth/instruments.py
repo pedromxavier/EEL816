@@ -154,9 +154,11 @@ class Instrument(metaclass=MetaInstrument):
         else:
             w[i:j] *= self.env.envelope(tf, d)
 
+        self.effects(w, i, j, n)
+
     @classmethod
     def effects(cls, w: np.ndarray, i: int, j: int, n: int):
-        ...
+        return None
 
     @classmethod
     def tremolo(cls, t: np.ndarray, a: float=0.0, b: float=4.0):
@@ -246,6 +248,34 @@ class Synth(Instrument, metaclass=MetaInstrument):
     def harmonics(cls, f: float):
         return cls.VOICE
 
+class Harmonica(Instrument, metaclass=MetaInstrument):
+
+    __key__ = 'harmonica'
+
+    VOICE = Instrument.get_harmonics([1.00, 0.5, 0.25, 0.125])
+
+    ENVELOPE = WaveEnvelope(
+        attack_time=0.05,
+        decay_time=0.05,
+        release_time=0.05,
+        sustain_amp=0.80
+        )
+
+    kwargs = {
+        'envelope' : ENVELOPE
+    }
+
+    @classmethod
+    def shape(cls, t: np.ndarray, f: float, k: int):
+        return WaveShape.sine(t, f * k, cls.tremolo(t, a=0.025))
+
+    @classmethod
+    def effects(cls, w, i, j, n):
+        w[i:j] += WaveShape.noise(j - i)
+
+    @classmethod
+    def harmonics(cls, f: float):
+        return cls.VOICE
 
 
 

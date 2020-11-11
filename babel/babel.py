@@ -43,7 +43,7 @@ class Babel:
         self.nm.basic_train()
         self.tm.basic_train()
 
-        self.synth = Synth()
+        self.synth = Synth(instrument='harmonica')
 
     def __next__(self):
         ## solicita tempo
