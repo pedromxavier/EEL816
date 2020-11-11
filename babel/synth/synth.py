@@ -22,7 +22,7 @@ TWO_PI = 2.0 * PI
 
 class Synth:
 
-    instrument = 'synth'
+    instrument = Instrument.get('synth')
 
     sample_rate = 44_100
 
