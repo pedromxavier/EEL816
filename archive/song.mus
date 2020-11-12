@@ -6,9 +6,13 @@
 !120
 
 /* key and time signature */
-$G (4/4)
+$C (4/4)
+
 |:
-C5 E5 G5[8] G5[8] E5
-D5 F5 A6[8] A6[8] F5
+C
+C4 D4 C4 E4
+Dm
+D4 F4 D4 A5
+F
+F4 A5 C5 F4
 :|
- -  -  -  -

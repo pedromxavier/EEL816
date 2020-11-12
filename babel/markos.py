@@ -22,9 +22,9 @@ class Markos:
     def seed(self, x: int):
         self.prev = x
 
-    def train(self, data):
+    def train(self, data, weight=1):
         for i in zip(data[:-1], data[1:]):
-            self._p[i] += 1
+            self._p[i] += weight
         self._p_dirty = True
 
     def __next__(self):
@@ -68,10 +68,9 @@ class TimeMarkos(Markos):
         while True: yield next(self)
 
     def basic_train(self):
-        self.train([0, 1])
-        self.train([0, 2])
-        self.train([1, 2])
-        self.train([2, 2])
+        for i in range(4):
+            for j in range(4):
+                self.train([i, j])
         self.seed(0)
 
 class ChordMarkos(Markos):
@@ -81,29 +80,35 @@ class ChordMarkos(Markos):
         Markos.__init__(self, 7)
 
     def basic_train(self):
-        self.train([0, 3, 4, 3, 0, 3, 4, 3])
+        self.train([0, 3, 4, 3])
+        self.train([0, 4, 5, 3])
+        self.train([5, 1, 2, 1])
+        self.train([5, 3, 0, 4])
         self.seed(0)
+
+class _NoteMarkos(Markos):
+
+    def __init__(self, octaves=8):
+        self.octaves = octaves
+        Markos.__init__(self, 12 * self.octaves)
 
 class NoteMarkos:
     """ >>> notes = NoteMarkos()
         >>> notes[chord].train(data)
         >>> notes[chord].seed(0)
     """
-
-    SCALE = [0, 2, 4, 5, 7, 9, 11]
-    ACCIDENTS = [1, 3, 6, 8, 10]
-
-    ALL = set(SCALE) | set(ACCIDENTS)
     
+    MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11]
+
     def __init__(self):
-        self._m = [Markos(12) for _ in range(7)]
+        self._m = [_NoteMarkos(8) for _ in range(7)]
         
     def __getitem__(self, key: int):
         return self._m[key]
 
     def basic_train(self):
-        for i in range(7): ## para cada acorde
-            self[i].train([self.SCALE[(i + j) % 7] for j in (0, 0, 2, 2, 4, 4, 2, 0, 4, 0)])
-            for j in (self.ALL - {self.SCALE[i], self.SCALE[(i + 2)%7], self.SCALE[(i + 4)%7]}):
-                self[i].train([j, self.SCALE[i]])
+        ## return-to-key
+        for i in range(7):
+            for j in range(self[i].octaves):
+                self[i]._p[12*j:12*(j+1), 12*j + self.MAJOR_SCALE[i]] += 1
             self[i].seed(0)

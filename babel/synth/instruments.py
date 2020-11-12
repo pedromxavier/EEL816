@@ -16,7 +16,7 @@ class WaveShape:
 
     @classmethod
     def square(cls, t: np.ndarray, f: float, df: float=0.0):
-        w = np.sin(np.multiply(TWO_PI, np.add(f, df)))
+        w = np.sin(np.multiply(np.multiply(TWO_PI, np.add(f, df)), t))
         return np.piecewise(w, [w < 0.0, w == 0.0,  w > 0.0], [-1.0, 0.0, 1.0])
 
     @classmethod
@@ -147,6 +147,9 @@ class Instrument(metaclass=MetaInstrument):
         ## get frame boundaries
         i, j = self.env.subframe(d, i, j, n)
 
+        if i >= j:
+            print(f'i={i} j ={j} d={d}')
+
         ## get time frame
         tf = t[i:j]
         for k, h in self.harmonics(f):
@@ -165,7 +168,7 @@ class Instrument(metaclass=MetaInstrument):
         if a == 0.0:
             return 0.0
         else:
-            return a * np.sin(TWO_PI * b * t)
+            return a * np.sin(TWO_PI * b * (t - t[0]))
 
     @classmethod
     def shape(cls, t: np.ndarray, f: float, k: int):
@@ -192,16 +195,16 @@ class Violin(Instrument, metaclass=MetaInstrument):
 
     __key__ = 'violin'
 
-    G_STRING = Instrument.get_harmonics([1.00, 0.42, 0.28, 0.32, 0.16, 0.02, 0.16, 0.08])
-    D_STRING = Instrument.get_harmonics([1.00, 0.36, 0.30, 0.26, 0.28, 0.08, 0.28, 0.31])
-    A_STRING = Instrument.get_harmonics([1.00, 0.32, 0.32, 0.24, 0.32, 0.16, 0.32, 0.36])
-    E_STRING = Instrument.get_harmonics([1.00, 0.24, 0.36, 0.26, 0.38, 0.22, 0.28, 0.42])
+    G_STRING = Instrument.get_harmonics([1.00, 0.22, 0.18, 0.12])
+    D_STRING = Instrument.get_harmonics([1.00, 0.26, 0.10, 0.16])
+    A_STRING = Instrument.get_harmonics([1.00, 0.22, 0.12, 0.14])
+    E_STRING = Instrument.get_harmonics([1.00, 0.24, 0.16, 0.16])
 
     ENVELOPE = WaveEnvelope(
-        attack_time=0.05,
-        decay_time=0.025,
-        release_time=0.025,
-        sustain_amp=0.9
+        attack_time=0.1,
+        decay_time=0.15,
+        release_time=0.2,
+        sustain_amp=0.7
         )
 
     kwargs = {
@@ -210,7 +213,7 @@ class Violin(Instrument, metaclass=MetaInstrument):
 
     @classmethod
     def shape(cls, t: np.ndarray, f: float, k: int):
-        return WaveShape.saw(t, f * k, cls.tremolo(t, 0.001))
+        return WaveShape.saw(t, f * k, cls.tremolo(t, 0.001)) + WaveShape.sine(t, pow(2, -5/12)* f * k, cls.tremolo(t, 0.001))
 
     @classmethod
     def harmonics(cls, f: float):
@@ -230,34 +233,9 @@ class Synth(Instrument, metaclass=MetaInstrument):
     VOICE = Instrument.get_harmonics([1.00, 0.5, 0.25, 0.125])
 
     ENVELOPE = WaveEnvelope(
-        attack_time=0.01,
-        decay_time=0.01,
-        release_time=0,
-        sustain_amp=0.95
-        )
-
-    kwargs = {
-        'envelope' : ENVELOPE
-    }
-
-    @classmethod
-    def shape(cls, t: np.ndarray, f: float, k: int):
-        return WaveShape.saw(t, f * k, cls.tremolo(t, a=0.025))
-
-    @classmethod
-    def harmonics(cls, f: float):
-        return cls.VOICE
-
-class Harmonica(Instrument, metaclass=MetaInstrument):
-
-    __key__ = 'harmonica'
-
-    VOICE = Instrument.get_harmonics([1.00, 0.5, 0.25, 0.125])
-
-    ENVELOPE = WaveEnvelope(
-        attack_time=0.05,
-        decay_time=0.05,
-        release_time=0.05,
+        attack_time=0.1,
+        decay_time=0.2,
+        release_time=0.25,
         sustain_amp=0.80
         )
 
@@ -267,11 +245,41 @@ class Harmonica(Instrument, metaclass=MetaInstrument):
 
     @classmethod
     def shape(cls, t: np.ndarray, f: float, k: int):
-        return WaveShape.sine(t, f * k, cls.tremolo(t, a=0.025))
+        return (WaveShape.saw(t, f * k) +
+                WaveShape.saw(t, pow(2, -5/12) * f * k) +
+                WaveShape.saw(t, pow(2, -17/12) * f * k) +
+                WaveShape.saw(t, pow(2, -2) * f * k) + 
+                WaveShape.saw(t, pow(2, -1) * f * k))
+
+    @classmethod
+    def harmonics(cls, f: float):
+        return cls.VOICE
+
+class Harmonica(Instrument, metaclass=MetaInstrument):
+
+    __key__ = 'harmonica'
+
+    VOICE = Instrument.get_harmonics([1.00, 0.8, 0.5, 0.25, 0.25, 0.125])
+
+    ENVELOPE = WaveEnvelope(
+        attack_time=0.1,
+        decay_time=0.2,
+        release_time=0.25,
+        sustain_amp=0.80
+        )
+
+    kwargs = {
+        'envelope' : ENVELOPE
+    }
+
+    @classmethod
+    def shape(cls, t: np.ndarray, f: float, k: int):
+        return (WaveShape.square(t, f * k, cls.tremolo(t, a=0.025)) +
+                WaveShape.square(t, pow(2, 8.0/12.0) * f * k, 0.0))
 
     @classmethod
     def effects(cls, w, i, j, n):
-        w[i:j] += WaveShape.noise(j - i)
+        w[i:j] += WaveShape.noise(j - i, 0.25)
 
     @classmethod
     def harmonics(cls, f: float):

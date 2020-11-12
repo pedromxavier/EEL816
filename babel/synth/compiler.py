@@ -22,17 +22,21 @@ class Compiler:
         if self.init_key in self.instructions:
             self.instructions[self.init_key](self)
 
-    def compile(self, source):
-        return [item for item in self._compile(source) if item is not None]
+    def compile(self, source, bytecode=False):
+        return [item for item in self._compile(source, bytecode=bytecode) if item is not None]
 
-    def _compile(self, source):
+    def _compile(self, source, bytecode=False):
         self.reset()
 
         self.queue.extendleft(self.parser.parse(source))
 
-        if self.init_key in self.instructions:
-            self.instructions[self.init_key](self)
-    
-        while self.queue:
-            cmd, *args = self.queue.pop()
-            yield self.instructions[cmd](self, *args)
+        if bytecode: ## intermediate code
+            while self.queue:
+                yield self.queue.pop()
+        else: ## exec
+            if self.init_key in self.instructions:
+                self.instructions[self.init_key](self)
+        
+            while self.queue:
+                cmd, *args = self.queue.pop()
+                yield self.instructions[cmd](self, *args)

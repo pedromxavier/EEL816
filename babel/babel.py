@@ -29,6 +29,11 @@ class Babel:
         else:
             self.tempo: float = self.TEMPO
 
+        if 'instrument' in kwargs:
+            self.instrument = kwargs['instrument']
+        else:
+            self.instrument = 'synth'
+
         self.t: int = None
         self.c: int = 0
         self.n: int = 0
@@ -39,11 +44,11 @@ class Babel:
         self.nm = NoteMarkos()
         self.tm = TimeMarkos(self.C)
 
-        self.cm.basic_train()
-        self.nm.basic_train()
-        self.tm.basic_train()
+        ##self.cm.basic_train()
+        ##self.nm.basic_train()
+        ##self.tm.basic_train()
 
-        self.synth = Synth(instrument='harmonica')
+        self.synth = Synth(instrument=self.instrument)
 
     def __next__(self):
         ## solicita tempo
@@ -61,7 +66,7 @@ class Babel:
         ## solicita nota
         self.n: int = next(self.nm[self.c])
 
-        return (self.FREQ * pow(2.0, self.n / 12.0), (self.C[1] / float(self.t)) * (60.0 / self.tempo))
+        return (self.FREQ * pow(2.0, self.n / 12.0), (self.C[1] / pow(2.0, self.t)) * (60.0 / self.tempo))
 
     def __iter__(self):
         while True: yield next(self)
@@ -82,26 +87,24 @@ class Babel:
         wave = self.synth.synth(notes)
         self.synth.play(wave, sync=True)
 
-    def train (self, data: tuple(tuple)):
-        """ data: ( (note, tempo), (note, tempo), (chord, None))
+    def train (self, data: list, weight: int = 1):
+        """ data: [(note, tempo), (note, tempo), (chord, None)]
         """
-        train_notes  = []
-        train_tempos = []
-        train_chords = []
-        
-        for element in data:
-            for note, tempo in element:
-                if tempo is None:
-                    train_chords.append(note)
-                else:
-                    train_notes.append(note)
-                    train_tempos.append(tempo)
-        
-        self.t.train(train_tempos)
-        self.c.train(train_chords)
-        self.n.train(train_notes)
+        chord = 0
+        ndata = {key: [] for key in range(7)}
+        cdata = [chord]
+        tdata = []
 
+        for n, t in data:
+            if t is None:
+                chord = n
+                cdata.append(chord)
+            else:
+                ndata[chord].append(n)
+                tdata.append(t)
 
+        self.cm.train(cdata, weight=weight)
+        self.tm.train(tdata, weight=weight)
 
-
-
+        for key in ndata:
+            self.nm[key].train(ndata[key], weight=weight)

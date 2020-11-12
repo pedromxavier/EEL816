@@ -5,7 +5,6 @@ tokens = (
     'TEMPO',
     'CLEF',
     'KEY',
-    'TONE',
     'BAR',
     'LREP',
     'RREP',
@@ -17,9 +16,7 @@ tokens = (
     'SEGNO',
     'CODA',
     'NUMBER',
-    'SHARP',
-    'FLAT',
-    'NATURAL',
+    'QUALITY',
     'DOT'
 )
 
@@ -27,9 +24,6 @@ t_DOT = r'\.'
 t_BAR = r'\/'
 t_SEGNO = r'\%'
 t_CODA = r'\@'
-t_SHARP = r'\#'
-t_NATURAL = r'\§'
-t_FLAT = r'b'
 t_TEMPO = r'\!'
 t_LREP = r'\|\:'
 t_RREP = r'\:\|'
@@ -40,10 +34,9 @@ t_RPAR = r'\)'
 t_PAUSE = r'\-'
 t_CLEF = r'\$'
 
+t_KEY = r"[A-G][\#b\§]?"
 
-t_KEY = r"[A-G]"
-
-t_TONE = r'm'
+t_QUALITY = r"[mº]"
 
 t_ignore = ' \t'
 t_ignore_COMMENT = r'\/\*[\s\S]*?\*\/'
@@ -79,6 +72,7 @@ def p_code(p):
 
 def p_expr(p):
     ''' expr : note
+             | chord
              | clef
              | time
              | rept
@@ -86,6 +80,20 @@ def p_expr(p):
              | tempo
     '''
     p[0] = p[1]
+
+def p_chord(p):
+    ''' chord : chordhead
+    '''
+    p[0] = ('CHORD', p[1])
+
+def p_chordhead(p):
+    ''' chordhead : KEY QUALITY
+                  | KEY
+    '''
+    if len(p) == 3:
+        p[0] = p[1] + p[2]
+    else:
+        p[0] = p[1]
 
 def p_note(p):
     ''' note : notehead DOT
@@ -106,23 +114,13 @@ def p_notehead(p):
         p[0] = ('NOTE', p[1], None)
 
 def p_pitch(p):
-    ''' pitch : KEY accident NUMBER
-              | KEY NUMBER
+    ''' pitch : KEY NUMBER
               | PAUSE
     '''
-    if len(p) == 4:
-        p[0] = (p[1], p[2], p[3])
-    elif len(p) == 3:
-        p[0] = (p[1], None, p[2])
+    if len(p) == 3:
+        p[0] = f"{p[1]}{p[2]}"
     else: ## Pause
-        p[0] = (None, None, None)
-
-def p_accident(p):
-    ''' accident : NATURAL
-                 | SHARP
-                 | FLAT
-    '''
-    p[0] = p[1]
+        p[0] = f""
 
 def p_duration(p):
     ''' duration : LBRA NUMBER RBRA
@@ -130,13 +128,13 @@ def p_duration(p):
     p[0] = p[2]
 
 def p_clef(p):
-    ''' clef : CLEF KEY TONE
+    ''' clef : CLEF KEY QUALITY
              | CLEF KEY
     '''
     if len(p) == 4:
-        p[0] = ('CLEF', p[2] + p[3])
+        p[0] = ('TONE', p[2] + p[3])
     else:
-        p[0] = ('CLEF', p[2])
+        p[0] = ('TONE', p[2])
 
 def p_time(p):
     ''' time : LPAR NUMBER BAR NUMBER RPAR
