@@ -82,3 +82,26 @@ class Babel:
         wave = self.synth.synth(notes)
         self.synth.play(wave, sync=True)
 
+    def train (self, data: tuple(tuple)):
+        """ data: ( (note, tempo), (note, tempo), (chord, None))
+        """
+        train_notes  = []
+        train_tempos = []
+        train_chords = []
+        
+        for element in data:
+            for note, tempo in element:
+                if tempo is None:
+                    train_chords.append(note)
+                else:
+                    train_notes.append(note)
+                    train_tempos.append(tempo)
+        
+        self.t.train(train_tempos)
+        self.c.train(train_chords)
+        self.n.train(train_notes)
+
+
+
+
+
