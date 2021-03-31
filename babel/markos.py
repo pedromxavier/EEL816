@@ -69,8 +69,9 @@ class TimeMarkos(Markos):
 
     def basic_train(self):
         for i in range(4):
-            for j in range(4):
-                self.train([i, j])
+            self.train([i, 2])
+        self.train([2, 3])
+        self.train([2, 1])
         self.seed(0)
 
 class ChordMarkos(Markos):
@@ -111,4 +112,6 @@ class NoteMarkos:
         for i in range(7):
             for j in range(self[i].octaves):
                 self[i]._p[12*j:12*(j+1), 12*j + self.MAJOR_SCALE[i]] += 1
+                self[i]._p[12*j:12*(j+1), 12*j + self.MAJOR_SCALE[(i + 2) % 7]] += 1
+                self[i]._p[12*j:12*(j+1), 12*j + self.MAJOR_SCALE[(i + 4) % 7]] += 1
             self[i].seed(0)

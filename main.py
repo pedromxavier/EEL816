@@ -11,7 +11,7 @@ synth = Synth(instrument='synth')
 compiler = Compiler(parser, instructions)
 data = compiler.compile(source)
 wave = synth.synth(data)
-#synth.play(wave, True)
+synth.play(wave, True)
 
 ## Aprendizado
 print('Compondo')
@@ -20,7 +20,8 @@ instructions['CHORD'] = cmd_chord
 bb = Babel(instrument='synth')
 compiler = Compiler(parser, instructions)
 data = compiler.compile(source)
-bb.cm.basic_train()
+##bb.cm.basic_train()
+bb.cm.seed(5)
 bb.nm.basic_train()
 bb.tm.basic_train()
 bb.train(data, weight=100)

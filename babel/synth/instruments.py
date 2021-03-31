@@ -46,7 +46,7 @@ class WaveEnvelope:
         u = (j - i) / d ## frame rate, basically
 
         if d <= self.attack_time:
-            k = int((self.attack_time + self.release_time) * u)
+            k = max(j, int((self.attack_time + self.release_time) * u))
         elif d >= (self.attack_time + self.decay_time):
             k = j + int(self.release_time * u)
         else: ## attack_time < d < attack_time + decay_time
@@ -55,6 +55,8 @@ class WaveEnvelope:
         return (i, min(k, n))
 
     def envelope(self, tf: np.ndarray, d: float):
+        if tf.shape[0] == 0: return 0.0
+
         t = tf - tf[0]
         if d <= self.attack_time:
             return (
